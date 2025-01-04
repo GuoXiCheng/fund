@@ -3,23 +3,16 @@
 layout: home
 
 hero:
-  name: "Index Fund"
-  text: "Index Fund Mini Program"
-  tagline: My great project tagline
+  name: 净值分位
+  text: 指数基金净值分位微信小程序
+  # tagline: My great project tagline
+  image:
+    src: /images/quantile-of-net-worth-dark.jpg
   actions:
     - theme: brand
-      text: Markdown Examples
+      text: Get Started
       link: /markdown-examples
     - theme: alt
-      text: API Examples
-      link: /api-examples
-
-features:
-  - title: Feature A
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature B
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
-  - title: Feature C
-    details: Lorem ipsum dolor sit amet, consectetur adipiscing elit
+      text: View on GitHub
+      link: https://github.com/GuoXiCheng/fund
 ---
-
