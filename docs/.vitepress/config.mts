@@ -4,6 +4,7 @@ import { defineConfig } from "vitepress";
 export default defineConfig({
   title: "净值分位",
   description: "Index Fund Mini Program",
+  head: [["link", { rel: "icon", type: "image/x-icon", href: "/images/favicon.ico" }]],
   themeConfig: {
     // https://vitepress.dev/reference/default-theme-config
     nav: [
