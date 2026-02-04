@@ -9,13 +9,18 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: "首页", link: "/" },
-      { text: "指南", link: "/guide" },
+      { text: "使用指南", link: "/guide" },
+      { text: "图片识别", link: "/image-recognition" },
     ],
 
     sidebar: [
       {
         text: "使用指南",
-        items: [{ text: "指南", link: "/guide" }],
+        items: [{ text: "使用指南", link: "/guide" }],
+      },
+      {
+        text: "图片识别",
+        items: [{ text: "图片识别", link: "/image-recognition" }],
       },
       // {
       //   text: "Examples",
