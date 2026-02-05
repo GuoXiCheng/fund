@@ -3,7 +3,20 @@ import AlipayFundOutput from "../data/AlipayFundOutput.json";
 // 为 AlipayFundOutput 添加索引签名类型
 const AlipayFundOutputTyped: { [key: string]: string } = AlipayFundOutput;
 
-const removeWords = ["定投", "更准更省", "\\|", "EDEHERd", "僵", "对", "BEgEse", "”", "ERARERD", "EDaFEEER"];
+const removeWords = [
+  "定投",
+  "更准更省",
+  "\\|",
+  "EDEHERd",
+  "僵",
+  "对",
+  "BEgEse",
+  "”",
+  "ERARERD",
+  "EDaFEEER",
+  "便悦纯债基金马",
+  "便悦指数基金从",
+];
 
 export function ocrAlipay(text: string) {
   // 去除所有空格
@@ -55,11 +68,26 @@ export function ocrAlipay(text: string) {
 
       let fundCode = AlipayFundOutputTyped[fundName] || null;
       if (fundCode == null) {
-        const altName = fundName.replace("(QDID", "(QDII)");
+        const altName = fundName.replace(/\(QDID\)?/g, "(QDII)");
+
         const altCode = AlipayFundOutputTyped[altName];
         if (altCode != null) {
           fundCode = altCode;
           fundName = altName;
+        } else {
+          const altName2 = fundName.replace(/联E/g, "联接");
+          const altCode2 = AlipayFundOutputTyped[altName2];
+          if (altCode2 != null) {
+            fundCode = altCode2;
+            fundName = altName2;
+          } else {
+            const altName3 = fundName.replace(/指H/g, "指数");
+            const altCode3 = AlipayFundOutputTyped[altName3];
+            if (altCode3 != null) {
+              fundCode = altCode3;
+              fundName = altName3;
+            }
+          }
         }
       }
 
