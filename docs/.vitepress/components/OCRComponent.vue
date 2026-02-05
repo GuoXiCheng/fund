@@ -151,4 +151,24 @@ export default {
 .copy-btn:hover {
   background: #388e3c;
 }
+/* 移动端表格横向滚动，内容不换行 */
+.table-responsive {
+  width: 100%;
+  overflow-x: auto;
+}
+table {
+  white-space: nowrap;
+  border-collapse: collapse;
+  font-size: 14px;
+  margin: 0;
+}
+th,
+td {
+  white-space: nowrap;
+  padding: 4px 10px;
+  font-size: 13px;
+}
+th {
+  font-weight: 500;
+}
 </style>
