@@ -72,10 +72,10 @@ export default {
       // 组装表格内容为文本
       const rows = this.funds.map(
         (f) => `
-      基金代码: ${f.fundCode}
-      基金名称: ${f.fundName}
-      持有金额: ${f.holdAmount}
-      持有收益: ${f.holdReturn}`,
+基金代码: ${f.fundCode}
+基金名称: ${f.fundName}
+持有金额: ${f.holdAmount}
+持有收益: ${f.holdReturn}`,
       );
       const content = [...rows].join("\n");
       this.copyToClipboard(content);
