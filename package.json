@@ -2,10 +2,12 @@
   "scripts": {
     "docs:dev": "vitepress dev docs",
     "docs:build": "vitepress build docs",
-    "docs:preview": "vitepress preview docs"
+    "docs:preview": "vitepress preview docs",
+    "docs:test": "vitest"
   },
   "devDependencies": {
-    "vitepress": "^1.5.0"
+    "vitepress": "^1.5.0",
+    "vitest": "^4.0.18"
   },
   "dependencies": {
     "tesseract.js": "^7.0.0"
