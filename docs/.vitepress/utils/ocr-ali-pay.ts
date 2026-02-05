@@ -3,7 +3,20 @@ import AlipayFundOutput from "../data/AlipayFundOutput.json";
 // 为 AlipayFundOutput 添加索引签名类型
 const AlipayFundOutputTyped: { [key: string]: string } = AlipayFundOutput;
 
-const removeWords = ["定投", "更准更省", "\\|", "EDEHERd", "僵", "对", "BEgEse", "”"];
+const removeWords = [
+  "定投",
+  "更准更省",
+  "\\|",
+  "EDEHERd",
+  "僵",
+  "对",
+  "BEgEse",
+  "”",
+  "ERARERD",
+  "EDaFEEER",
+  "便悦纯债基金马",
+  "便悦指数基金从",
+];
 
 export function ocrAlipay(text: string) {
   // 去除所有空格
@@ -53,8 +66,33 @@ export function ocrAlipay(text: string) {
           return null;
       }
 
+      let fundCode = AlipayFundOutputTyped[fundName] || null;
+      if (fundCode == null) {
+        const altName = fundName.replace(/\(QDID\)?/g, "(QDII)");
+
+        const altCode = AlipayFundOutputTyped[altName];
+        if (altCode != null) {
+          fundCode = altCode;
+          fundName = altName;
+        } else {
+          const altName2 = fundName.replace(/联E/g, "联接");
+          const altCode2 = AlipayFundOutputTyped[altName2];
+          if (altCode2 != null) {
+            fundCode = altCode2;
+            fundName = altName2;
+          } else {
+            const altName3 = fundName.replace(/指H/g, "指数");
+            const altCode3 = AlipayFundOutputTyped[altName3];
+            if (altCode3 != null) {
+              fundCode = altCode3;
+              fundName = altName3;
+            }
+          }
+        }
+      }
+
       return {
-        fundCode: AlipayFundOutputTyped[fundName] || null,
+        fundCode,
         fundName,
         holdAmount: cleanNumber(holdAmount),
         holdReturn: cleanNumber(holdReturn),
@@ -66,14 +104,15 @@ export function ocrAlipay(text: string) {
 
 function parseFundData(data: string[]): string[][] {
   return data.map((item) => {
-    // 匹配：中文或字母开头的名称、数字（含千分位）、+数字、百分号等
-    // 规则：连续的中文/字母/数字/ETF/联接/混合等为一组，数字（含,和.）、+数字、百分号为一组
     // 先把所有+前加空格，%前加空格，方便分割
     let s = item.replace(/([+])/g, " $1").replace(/(%)/g, "$1 ");
-    // 再用正则分组
+    // 修改正则：
+    // 1. [+-]?\d{1,3}(?:,\d{3})*(?:\.\d+)? - 匹配数字（含千分位和小数）
+    // 2. [+-]?\d+(?:\.\d+)?% - 匹配百分数
+    // 3. [\u4e00-\u9fa5A-Za-z()]+(?:ETF|联接|混合)?[A-Z]? - 匹配中文/字母/括号组合
     return (
       s.match(
-        /[\u4e00-\u9fa5A-Za-z]+(?:ETF|联接|混合)?[A-Z]?|[+-]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|[+-]?\d+(?:\.\d+)?%/g,
+        /[+-]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|[+-]?\d+(?:\.\d+)?%|[\u4e00-\u9fa5A-Za-z()]+(?:ETF|联接|混合)?[A-Z]?/g,
       ) || []
     );
   });

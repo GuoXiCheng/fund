@@ -60,6 +60,7 @@ export default {
           }
         },
       });
+
       const result = ocrAlipay(text);
       if (Array.isArray(result) && result.length) {
         this.funds = result;
