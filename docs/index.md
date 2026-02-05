@@ -10,9 +10,9 @@ hero:
     src: /images/quantile-of-net-worth-dark.jpg
   actions:
     - theme: brand
-      text: Get Started
+      text: 使用指南
       link: /guide
     - theme: alt
-      text: View on GitHub
-      link: https://github.com/GuoXiCheng/fund
+      text: 图片识别
+      link: /image-recognition
 ---
