@@ -1,6 +1,6 @@
 <template>
   <div>
-    <input type="file" @change="onFileChange" accept="image/*" />
+    <input type="file" @change="onFileChange" accept="image/*" multiple />
     <div v-if="progress > 0">识别中... {{ progress }}%</div>
     <div v-if="funds.length">
       <h3>识别结果：</h3>
@@ -8,6 +8,7 @@
       <table cellpadding="6">
         <thead>
           <tr>
+            <th>序号</th>
             <th>基金代码</th>
             <th>基金名称</th>
             <th>持有金额</th>
@@ -16,6 +17,7 @@
         </thead>
         <tbody>
           <tr v-for="f in funds" :key="f.fundCode">
+            <td>{{ funds.indexOf(f) + 1 }}</td>
             <td>{{ f.fundCode }}</td>
             <td>{{ f.fundName }}</td>
             <td>{{ f.holdAmount }}</td>
@@ -33,7 +35,7 @@
 </template>
 <script>
 import Tesseract from "tesseract.js";
-import { ocrAlipay } from "../utils/ocr-ali-pay";
+import { ocrAlipay2 } from "../utils/ocr-ali-pay2";
 export default {
   data() {
     return {
@@ -44,28 +46,45 @@ export default {
   },
   methods: {
     async onFileChange(e) {
-      const file = e.target.files[0];
-      if (!file) return;
+      const files = e.target.files;
+      if (!files || files.length === 0) return;
 
       this.progress = 0;
       this.text = "";
       this.funds = [];
+      const allFunds = [];
+      const totalFiles = files.length;
 
-      const {
-        data: { text },
-      } = await Tesseract.recognize(file, "eng+chi_sim", {
-        logger: (m) => {
-          if (m.status === "recognizing text") {
-            this.progress = Math.round(m.progress * 100);
+      for (let i = 0; i < totalFiles; i++) {
+        const file = files[i];
+        try {
+          const {
+            data: { text },
+          } = await Tesseract.recognize(file, "eng+chi_sim", {
+            logger: (m) => {
+              if (m.status === "recognizing text") {
+                // 计算总体进度
+                const fileProgress = m.progress;
+                const overallProgress = ((i + fileProgress) / totalFiles) * 100;
+                this.progress = Math.round(overallProgress);
+              }
+            },
+          });
+
+          const result = ocrAlipay2(text);
+          if (Array.isArray(result) && result.length) {
+            allFunds.push(...result);
           }
-        },
-      });
+        } catch (error) {
+          console.error(`处理文件 ${file.name} 时出错:`, error);
+          this.text += `文件 ${file.name} 识别失败。\n`;
+        }
+      }
 
-      const result = ocrAlipay(text);
-      if (Array.isArray(result) && result.length) {
-        this.funds = result;
+      if (allFunds.length > 0) {
+        this.funds = allFunds;
       } else {
-        this.text = "未识别到有效基金信息";
+        this.text = this.text || "所有图片中均未识别到有效基金信息";
       }
       this.progress = 100;
     },

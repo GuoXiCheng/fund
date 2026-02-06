@@ -28,6 +28,9 @@ export function ocrAlipay(text: string) {
     processed = processed.replace(removePattern, "");
   }
 
+  // 替换常见 OCR 错误
+  processed = processed.replace(/侈/g, "鑫");
+
   const aliPayKeys = Object.keys(AlipayFundOutputTyped);
   const keywords = Array.from(new Set(aliPayKeys.map((key) => key.substring(0, 2))));
 
@@ -62,32 +65,21 @@ export function ocrAlipay(text: string) {
           holdAmount = item[3];
           holdReturn = item[4];
           break;
+        case 8:
+          fundName = item[0] + item[3] + item[4] + item[5];
+          holdAmount = item[1];
+          holdReturn = item[2];
+          break;
         default:
           return null;
       }
 
       let fundCode = AlipayFundOutputTyped[fundName] || null;
       if (fundCode == null) {
-        const altName = fundName.replace(/\(QDID\)?/g, "(QDII)");
-
-        const altCode = AlipayFundOutputTyped[altName];
-        if (altCode != null) {
-          fundCode = altCode;
-          fundName = altName;
-        } else {
-          const altName2 = fundName.replace(/联E/g, "联接");
-          const altCode2 = AlipayFundOutputTyped[altName2];
-          if (altCode2 != null) {
-            fundCode = altCode2;
-            fundName = altName2;
-          } else {
-            const altName3 = fundName.replace(/指H/g, "指数");
-            const altCode3 = AlipayFundOutputTyped[altName3];
-            if (altCode3 != null) {
-              fundCode = altCode3;
-              fundName = altName3;
-            }
-          }
+        const fuzzyResult = fuzzySearch(item[0], fundName, aliPayKeys);
+        if (fuzzyResult != null) {
+          fundCode = fuzzyResult.fundCode;
+          fundName = fuzzyResult.fundName;
         }
       }
 
@@ -100,6 +92,22 @@ export function ocrAlipay(text: string) {
     })
     .filter((item) => item && item.fundCode);
   return fundData;
+}
+
+function fuzzySearch(
+  prefixName: string,
+  fuzzyName: string,
+  aliPayKeys: string[],
+): { fundCode: string; fundName: string } | null {
+  const targetList = aliPayKeys.filter((key) => key.startsWith(prefixName));
+  const endMatch = fuzzyName.slice(-1);
+  const finalMatch = targetList.find((key) => key.endsWith(endMatch));
+  if (finalMatch != null) {
+    const fundCode = AlipayFundOutputTyped[finalMatch];
+    const fundName = finalMatch;
+    return { fundCode, fundName };
+  }
+  return null;
 }
 
 function parseFundData(data: string[]): string[][] {
