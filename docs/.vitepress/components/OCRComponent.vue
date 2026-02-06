@@ -1,4 +1,5 @@
 <template>
+  <img src="/images/Alipay-Hold-Fund.png" alt="OCR识别示例" style="width: 35%" />
   <div>
     <input type="file" @change="onFileChange" accept="image/*" multiple />
     <div v-if="progress > 0">识别中... {{ progress }}%</div>
