@@ -1,10 +1,10 @@
 import { describe, it, expect } from "vitest";
-import { ocrAlipay } from "../docs/.vitepress/utils/ocr-ali-pay";
 import fs from "fs";
+import { ocrAlipay2 } from "../docs/.vitepress/utils/ocr-ali-pay2";
 
 describe("ocrAlipay function", () => {
   it("test case 4", () => {
-    const result = ocrAlipay(fs.readFileSync("tests/feature/case4.txt", "utf-8"));
+    const result = ocrAlipay2(fs.readFileSync("tests/feature/case4.txt", "utf-8"));
     expect(result).toEqual([
       {
         fundCode: "017515",
