@@ -60,7 +60,10 @@ export function ocrAlipay2(text: string) {
         const extraNameParts = item.slice(3).filter((part) => !/[+\-%]/.test(part));
         // 从 targetList 中找到一个包含 extraNameParts 中任一元素的基金名称
         for (const part of extraNameParts) {
-          const matchedKey = targetList.find((key) => key.includes(part) || key.endsWith(part.slice(-1)));
+          // 清除 part 中的非字母、数字、中文字符
+          const cleanedPart = part.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "");
+          if (!cleanedPart) continue;
+          const matchedKey = targetList.find((key) => key.includes(cleanedPart) || key.endsWith(cleanedPart.slice(-1)));
           if (matchedKey) {
             let fundCode = AlipayFundOutputTyped[matchedKey] || null;
             if (fundCode != null) {
