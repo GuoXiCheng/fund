@@ -42,7 +42,7 @@ export function ocrAlipay(text: string) {
   if (matches.length === 0) return null;
 
   const parsed = parseFundData(matches);
-  console.log("Parsed Data:", parsed);
+
   const fundData = parsed
     .map((item) => {
       let fundName = "";
