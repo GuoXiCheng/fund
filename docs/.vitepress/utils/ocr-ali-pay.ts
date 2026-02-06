@@ -28,6 +28,9 @@ export function ocrAlipay(text: string) {
     processed = processed.replace(removePattern, "");
   }
 
+  // 替换常见 OCR 错误
+  processed = processed.replace(/侈/g, "鑫");
+
   const aliPayKeys = Object.keys(AlipayFundOutputTyped);
   const keywords = Array.from(new Set(aliPayKeys.map((key) => key.substring(0, 2))));
 
@@ -61,6 +64,11 @@ export function ocrAlipay(text: string) {
           fundName = item[0] + item[1] + item[2];
           holdAmount = item[3];
           holdReturn = item[4];
+          break;
+        case 8:
+          fundName = item[0] + item[3] + item[4] + item[5];
+          holdAmount = item[1];
+          holdReturn = item[2];
           break;
         default:
           return null;
