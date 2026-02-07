@@ -3,127 +3,115 @@ import AlipayFundOutput from "../data/AlipayFundOutput.json";
 // 为 AlipayFundOutput 添加索引签名类型
 const AlipayFundOutputTyped: { [key: string]: string } = AlipayFundOutput;
 
-const removeWords = [
-  "定投",
-  "更准更省",
-  "\\|",
-  "EDEHERd",
-  "僵",
-  "对",
-  "BEgEse",
-  "”",
-  "ERARERD",
-  "EDaFEEER",
-  "便悦纯债基金马",
-  "便悦指数基金从",
+const removeWords = ["定投", "更准更省"];
+
+// OCR 常见错误替换表
+const ocrErrorMap: [string, string][] = [
+  ["侈", "鑫"],
+  ["新华泰", "华泰"],
 ];
 
 export function ocrAlipay(text: string) {
-  // 去除所有空格
+  // 1. 去除所有空格和指定内容
   let processed = text.replace(/\s+/g, "");
-
-  // 去除指定内容
-  if (removeWords.length > 0) {
-    const removePattern = new RegExp(removeWords.join("|"), "g");
-    processed = processed.replace(removePattern, "");
+  if (removeWords.length) {
+    processed = processed.replace(new RegExp(removeWords.join("|"), "g"), "");
   }
 
-  // 替换常见 OCR 错误
-  processed = processed.replace(/侈/g, "鑫");
+  // 2. 替换 OCR 错误
+  for (const [error, correct] of ocrErrorMap) {
+    processed = processed.replace(new RegExp(error, "g"), correct);
+  }
 
+  // 3. 匹配基金数据片段
   const aliPayKeys = Object.keys(AlipayFundOutputTyped);
-  const keywords = Array.from(new Set(aliPayKeys.map((key) => key.substring(0, 2))));
-
-  // 动态生成正则表达式
-  const pattern = `(${keywords.join("|")})[^%]*%`;
-  const regex = new RegExp(pattern, "g");
-  // 匹配指定开头和结尾的内容
+  const keywords = Array.from(new Set(aliPayKeys.map((key) => key.slice(0, 2))));
+  const regex = new RegExp(`(${keywords.join("|")})[^%]*%`, "g");
   const matches = processed.match(regex) || [];
-  if (matches.length === 0) return null;
+  if (!matches.length) return null;
 
+  // 4. 解析基金数据
   const parsed = parseFundData(matches);
-
-  const fundData = parsed
+  return parsed
     .map((item) => {
-      let fundName = "";
-      let holdAmount = "";
-      let holdReturn = "";
-
-      switch (item.length) {
-        case 5:
-          fundName = item[0];
-          holdAmount = item[1];
-          holdReturn = item[2];
-          break;
-        case 6:
-          fundName = item[0] + item[3];
-          holdAmount = item[1];
-          holdReturn = item[2];
-          break;
-        case 7:
-          fundName = item[0] + item[1] + item[2];
-          holdAmount = item[3];
-          holdReturn = item[4];
-          break;
-        case 8:
-          fundName = item[0] + item[3] + item[4] + item[5];
-          holdAmount = item[1];
-          holdReturn = item[2];
-          break;
-        default:
-          return null;
+      const fundName = item[0];
+      const candidates = aliPayKeys.filter((key) => key.startsWith(fundName));
+      if (candidates.length === 1) {
+        return {
+          fundCode: AlipayFundOutputTyped[candidates[0]],
+          fundName,
+          holdAmount: cleanNumber(item[1]),
+          holdReturn: cleanNumber(item[2]),
+        };
       }
-
-      let fundCode = AlipayFundOutputTyped[fundName] || null;
-      if (fundCode == null) {
-        const fuzzyResult = fuzzySearch(item[0], fundName, aliPayKeys);
-        if (fuzzyResult != null) {
-          fundCode = fuzzyResult.fundCode;
-          fundName = fuzzyResult.fundName;
+      // 多候选时，尝试用额外信息精确匹配
+      const extraParts = item.slice(3).filter((part) => !/[+\-%]/.test(part));
+      for (const part of extraParts) {
+        const cleaned = part.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "");
+        if (!cleaned) continue;
+        const matched = candidates.find((key) => key.includes(cleaned) || key.endsWith(cleaned.slice(-1)));
+        if (matched) {
+          return {
+            fundCode: AlipayFundOutputTyped[matched],
+            fundName: matched,
+            holdAmount: cleanNumber(item[1]),
+            holdReturn: cleanNumber(item[2]),
+          };
         }
       }
-
-      return {
-        fundCode,
-        fundName,
-        holdAmount: cleanNumber(holdAmount),
-        holdReturn: cleanNumber(holdReturn),
-      };
+      return null;
     })
-    .filter((item) => item && item.fundCode);
-  return fundData;
-}
-
-function fuzzySearch(
-  prefixName: string,
-  fuzzyName: string,
-  aliPayKeys: string[],
-): { fundCode: string; fundName: string } | null {
-  const targetList = aliPayKeys.filter((key) => key.startsWith(prefixName));
-  const endMatch = fuzzyName.slice(-1);
-  const finalMatch = targetList.find((key) => key.endsWith(endMatch));
-  if (finalMatch != null) {
-    const fundCode = AlipayFundOutputTyped[finalMatch];
-    const fundName = finalMatch;
-    return { fundCode, fundName };
-  }
-  return null;
+    .filter((item) => item != null)
+    .filter((item) => item.fundCode != null);
 }
 
 function parseFundData(data: string[]): string[][] {
-  return data.map((item) => {
-    // 先把所有+前加空格，%前加空格，方便分割
-    let s = item.replace(/([+])/g, " $1").replace(/(%)/g, "$1 ");
-    // 修改正则：
-    // 1. [+-]?\d{1,3}(?:,\d{3})*(?:\.\d+)? - 匹配数字（含千分位和小数）
-    // 2. [+-]?\d+(?:\.\d+)?% - 匹配百分数
-    // 3. [\u4e00-\u9fa5A-Za-z()]+(?:ETF|联接|混合)?[A-Z]? - 匹配中文/字母/括号组合
-    return (
-      s.match(
-        /[+-]?\d{1,3}(?:,\d{3})*(?:\.\d+)?|[+-]?\d+(?:\.\d+)?%|[\u4e00-\u9fa5A-Za-z()]+(?:ETF|联接|混合)?[A-Z]?/g,
-      ) || []
-    );
+  // 给字符串 + 号 和 - 号 前面添加空格
+  const result1 = data.map((item) => item.replace(/([+-])/g, " $1"));
+  // 给字符串0.00前面添加空格
+  const result2 = result1.map((item) => item.replace(/0.00/g, " 0.00"));
+  // 给第一个小数点符号，往前找第一个非数字字符（忽略逗号），在这个字符后面添加空格
+  const result3 = result2.map((item) => {
+    const dotIndex = item.indexOf(".");
+    if (dotIndex === -1) {
+      return item;
+    }
+
+    const beforeDot = item.substring(0, dotIndex);
+    // 从小数点前的字符串末尾开始，反向查找第一个非数字且非逗号的字符
+    for (let i = beforeDot.length - 1; i >= 0; i--) {
+      const char = beforeDot[i];
+      if (!/\d|,/.test(char)) {
+        // 找到后，在该字符后面插入空格
+        const insertIndex = i + 1;
+        return beforeDot.substring(0, insertIndex) + " " + beforeDot.substring(insertIndex) + item.substring(dotIndex);
+      }
+    }
+
+    return item;
   });
+
+  // 找到第一个 + 号 或 - 号，往后找到第一个非数字字符，在这个字符前面添加空格
+  const result4 = result3.map((item) => {
+    const signIndex = item.search(/[+-]/);
+    if (signIndex === -1) {
+      return item;
+    }
+
+    const sub = item.substring(signIndex + 1);
+    // 查找第一个不是数字、逗号或小数点的字符
+    const nonDigitMatch = sub.match(/[^0-9,.]/);
+
+    if (nonDigitMatch && nonDigitMatch.index !== undefined) {
+      // 计算在原始字符串中插入空格的位置
+      const insertIndex = signIndex + 1 + nonDigitMatch.index;
+      return item.slice(0, insertIndex) + " " + item.slice(insertIndex);
+    }
+
+    return item;
+  });
+
+  return result4.map((item) => item.split(" ").filter((part) => part.trim() !== ""));
 }
 
 function cleanNumber(str: string): number {
