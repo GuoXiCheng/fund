@@ -12,74 +12,56 @@ const ocrErrorMap: [string, string][] = [
 ];
 
 export function ocrAlipay(text: string) {
-  // 去除所有空格
+  // 1. 去除所有空格和指定内容
   let processed = text.replace(/\s+/g, "");
-
-  // 去除指定内容
-  if (removeWords.length > 0) {
-    const removePattern = new RegExp(removeWords.join("|"), "g");
-    processed = processed.replace(removePattern, "");
+  if (removeWords.length) {
+    processed = processed.replace(new RegExp(removeWords.join("|"), "g"), "");
   }
 
-  // 替换常见 OCR 错误
-  ocrErrorMap.forEach(([errorChar, correctChar]) => {
-    processed = processed.replace(new RegExp(errorChar, "g"), correctChar);
-  });
+  // 2. 替换 OCR 错误
+  for (const [error, correct] of ocrErrorMap) {
+    processed = processed.replace(new RegExp(error, "g"), correct);
+  }
 
-  // 取得所有关键前缀
+  // 3. 匹配基金数据片段
   const aliPayKeys = Object.keys(AlipayFundOutputTyped);
-  const keywords = Array.from(new Set(aliPayKeys.map((key) => key.substring(0, 2))));
-
-  // 动态生成正则表达式
-  const pattern = `(${keywords.join("|")})[^%]*%`;
-  const regex = new RegExp(pattern, "g");
-  // 匹配指定开头和结尾的内容
+  const keywords = Array.from(new Set(aliPayKeys.map((key) => key.slice(0, 2))));
+  const regex = new RegExp(`(${keywords.join("|")})[^%]*%`, "g");
   const matches = processed.match(regex) || [];
-  if (matches.length === 0) return null;
+  if (!matches.length) return null;
 
+  // 4. 解析基金数据
   const parsed = parseFundData(matches);
-
-  const fundData = parsed
+  return parsed
     .map((item) => {
       const fundName = item[0];
-      const targetList = aliPayKeys.filter((key) => key.startsWith(fundName));
-
-      if (targetList.length == 1) {
-        let fundCode = AlipayFundOutputTyped[targetList[0]] || null;
-
-        if (fundCode != null) {
+      const candidates = aliPayKeys.filter((key) => key.startsWith(fundName));
+      if (candidates.length === 1) {
+        return {
+          fundCode: AlipayFundOutputTyped[candidates[0]],
+          fundName,
+          holdAmount: cleanNumber(item[1]),
+          holdReturn: cleanNumber(item[2]),
+        };
+      }
+      // 多候选时，尝试用额外信息精确匹配
+      const extraParts = item.slice(3).filter((part) => !/[+\-%]/.test(part));
+      for (const part of extraParts) {
+        const cleaned = part.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "");
+        if (!cleaned) continue;
+        const matched = candidates.find((key) => key.includes(cleaned) || key.endsWith(cleaned.slice(-1)));
+        if (matched) {
           return {
-            fundCode,
-            fundName,
+            fundCode: AlipayFundOutputTyped[matched],
+            fundName: matched,
             holdAmount: cleanNumber(item[1]),
             holdReturn: cleanNumber(item[2]),
           };
         }
-      } else {
-        // 从第四个元素开始筛选不包含 + 号、- 号、% 号 的元素
-        const extraNameParts = item.slice(3).filter((part) => !/[+\-%]/.test(part));
-        // 从 targetList 中找到一个包含 extraNameParts 中任一元素的基金名称
-        for (const part of extraNameParts) {
-          // 清除 part 中的非字母、数字、中文字符
-          const cleanedPart = part.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "");
-          if (!cleanedPart) continue;
-          const matchedKey = targetList.find((key) => key.includes(cleanedPart) || key.endsWith(cleanedPart.slice(-1)));
-          if (matchedKey) {
-            let fundCode = AlipayFundOutputTyped[matchedKey] || null;
-            if (fundCode != null) {
-              return {
-                fundCode,
-                fundName: matchedKey,
-                holdAmount: cleanNumber(item[1]),
-                holdReturn: cleanNumber(item[2]),
-              };
-            }
-          }
-        }
       }
+      return null;
     })
     .filter((item) => item && item.fundCode);
-  return fundData;
 }
 
 function parseFundData(data: string[]): string[][] {
