@@ -10,6 +10,7 @@
     "vitest": "^4.0.18"
   },
   "dependencies": {
+    "element-plus": "^2.13.2",
     "tesseract.js": "^7.0.0"
   }
 }

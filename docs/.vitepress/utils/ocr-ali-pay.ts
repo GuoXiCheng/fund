@@ -61,7 +61,8 @@ export function ocrAlipay(text: string) {
       }
       return null;
     })
-    .filter((item) => item && item.fundCode);
+    .filter((item) => item != null)
+    .filter((item) => item.fundCode != null);
 }
 
 function parseFundData(data: string[]): string[][] {
