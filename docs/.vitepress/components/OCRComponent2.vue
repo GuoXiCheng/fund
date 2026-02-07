@@ -10,15 +10,20 @@
     <a>使用教程</a>
   </div>
   <div class="upload-button">
-    <el-upload v-model:file-list="fileList" multiple accept="image/*" :on-change="handleOnChange">
-      <el-button type="primary">点击上传</el-button>
-      <template #file="{ file }">
-        <span>{{ file.name }}</span>
-        <el-progress :percentage="progressMap[file.name + '_' + file.size] || 0" />
-      </template>
+    <el-upload
+      v-model:file-list="fileList"
+      multiple
+      accept="image/*"
+      :show-file-list="false"
+      :on-change="handleOnChange"
+    >
+      <el-button type="primary" style="margin-right: 10px" :loading-icon="Eleme" :loading="isLoading"
+        >点击上传</el-button
+      >
     </el-upload>
+    <el-button type="success" @click="copyContent" style="margin-left: 10px">复制内容</el-button>
   </div>
-  <el-button class="copy-button" type="success" v-if="allFunds.length > 0" :onClick="copyContent">复制内容</el-button>
+
   <div style="overflow-x: auto" v-if="allFunds.length > 0">
     <el-table :data="allFunds" border size="small" :show-header="false">
       <el-table-column type="index" width="30" />
@@ -32,14 +37,15 @@
 
 <script lang="ts" setup>
 import { ref } from "vue";
-import { ElMessage, ElMessageBox } from "element-plus";
+import { ElMessage } from "element-plus";
 import Tesseract from "tesseract.js";
-
+import { Eleme } from "@element-plus/icons-vue";
 import type { UploadFile } from "element-plus";
 import { ocrAlipay } from "../utils/ocr-ali-pay";
 
 const fileList = ref<UploadFile[]>([]);
-const progressMap = ref<Record<string, number>>({});
+const isLoading = ref(false);
+
 const allFunds = ref<
   {
     fundCode: string;
@@ -57,31 +63,23 @@ async function handleOnChange(file: UploadFile, fileList: UploadFile[]) {
     fileList.length = 0;
     fileList.push(...uniqueList);
 
-    startOCR(file);
+    isLoading.value = true;
+    await startOCR(file);
+    isLoading.value = false;
   }
-}
-
-function getFileKey(file: UploadFile) {
-  return `${file.name}_${file.size}`;
 }
 
 async function startOCR(file: UploadFile) {
   if (!file.raw) return;
-
-  const key = getFileKey(file);
-  progressMap.value[key] = 0;
 
   const {
     data: { text },
   } = await Tesseract.recognize(file.raw, "eng+chi_sim", {
     logger: (m) => {
       if (m.status === "recognizing text") {
-        progressMap.value[key] = Math.round(m.progress * 100);
       }
     },
   });
-
-  progressMap.value[key] = 100;
 
   const result = ocrAlipay(text);
   if (result != null && Array.isArray(result) && result.length) {
@@ -140,12 +138,7 @@ function copyToClipboard(text: string) {
 }
 .upload-button {
   display: flex;
-  flex-direction: column;
   justify-content: center;
-  align-items: center;
   margin: 10px 0;
-}
-.copy-button {
-  margin-bottom: 10px;
 }
 </style>
