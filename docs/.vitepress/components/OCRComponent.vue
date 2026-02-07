@@ -36,7 +36,7 @@
 </template>
 <script>
 import Tesseract from "tesseract.js";
-import { ocrAlipay2 } from "../utils/ocr-ali-pay2";
+import { ocrAlipay } from "../utils/ocr-ali-pay";
 export default {
   data() {
     return {
@@ -72,7 +72,7 @@ export default {
             },
           });
 
-          const result = ocrAlipay2(text);
+          const result = ocrAlipay(text);
           if (Array.isArray(result) && result.length) {
             allFunds.push(...result);
           }
