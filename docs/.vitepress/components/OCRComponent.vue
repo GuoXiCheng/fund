@@ -1,195 +1,146 @@
 <template>
-  <img src="/images/Alipay-Hold-Fund.png" alt="OCR识别示例" style="width: 35%" />
-  <div>
-    <input type="file" @change="onFileChange" accept="image/*" multiple />
-    <div v-if="progress > 0">识别中... {{ progress }}%</div>
-    <div v-if="funds.length">
-      <h3>识别结果：</h3>
-      <button class="copy-btn" @click="copyFunds">复制表格内容</button>
-      <table cellpadding="6">
-        <thead>
-          <tr>
-            <th>序号</th>
-            <th>基金代码</th>
-            <th>基金名称</th>
-            <th>持有金额</th>
-            <th>持有收益</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="f in funds" :key="f.fundCode">
-            <td>{{ funds.indexOf(f) + 1 }}</td>
-            <td>{{ f.fundCode }}</td>
-            <td>{{ f.fundName }}</td>
-            <td>{{ f.holdAmount }}</td>
-            <td>{{ f.holdReturn }}</td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
-    <div v-else-if="text">
-      <h3>识别结果：</h3>
-      <button class="copy-btn" @click="copyText">复制内容</button>
-      <pre>{{ text }}</pre>
-    </div>
+  <div class="example-image">
+    <el-image style="width: 300px; height: 300px" src="/images/Alipay-Hold-Fund.png" fit="contain" />
+    <span class="demonstration">上传 “持有” 页面截图</span>
+  </div>
+  <div class="title">
+    <h4>免费使用 · 不限用量</h4>
+  </div>
+  <div class="guide"><a>使用教程</a></div>
+  <div class="upload-button">
+    <el-upload
+      v-model:file-list="fileList"
+      multiple
+      accept="image/*"
+      :show-file-list="false"
+      :on-change="handleOnChange"
+    >
+      <el-button type="primary" style="margin-right: 10px" :loading-icon="Eleme" :loading="isLoading"
+        >点击上传</el-button
+      >
+    </el-upload>
+    <el-button type="success" @click="copyContent" style="margin-left: 10px">复制内容</el-button>
+  </div>
+
+  <div style="overflow-x: auto" v-if="allFunds.length > 0">
+    <el-table :data="allFunds" border size="small" :show-header="false">
+      <el-table-column type="index" width="30" />
+      <el-table-column prop="fundCode" />
+      <el-table-column prop="fundName" :min-width="250" />
+      <el-table-column prop="holdAmount" />
+      <el-table-column prop="holdReturn" />
+    </el-table>
   </div>
 </template>
-<script>
+
+<script lang="ts" setup>
+import { ref } from "vue";
+import { ElMessage } from "element-plus";
 import Tesseract from "tesseract.js";
+import { Eleme } from "@element-plus/icons-vue";
+import type { UploadFile } from "element-plus";
 import { ocrAlipay } from "../utils/ocr-ali-pay";
-export default {
-  data() {
-    return {
-      progress: 0,
-      text: "",
-      funds: [],
-    };
-  },
-  methods: {
-    async onFileChange(e) {
-      const files = e.target.files;
-      if (!files || files.length === 0) return;
 
-      this.progress = 0;
-      this.text = "";
-      this.funds = [];
-      const allFunds = [];
-      const totalFiles = files.length;
+const fileList = ref<UploadFile[]>([]);
+const isLoading = ref(false);
 
-      for (let i = 0; i < totalFiles; i++) {
-        const file = files[i];
-        try {
-          const {
-            data: { text },
-          } = await Tesseract.recognize(file, "eng+chi_sim", {
-            logger: (m) => {
-              if (m.status === "recognizing text") {
-                // 计算总体进度
-                const fileProgress = m.progress;
-                const overallProgress = ((i + fileProgress) / totalFiles) * 100;
-                this.progress = Math.round(overallProgress);
-              }
-            },
-          });
+const allFunds = ref<
+  {
+    fundCode: string;
+    fundName: string;
+    holdAmount: number;
+    holdReturn: number;
+  }[]
+>([]);
 
-          const result = ocrAlipay(text);
-          if (Array.isArray(result) && result.length) {
-            allFunds.push(...result);
-          }
-        } catch (error) {
-          console.error(`处理文件 ${file.name} 时出错:`, error);
-          this.text += `文件 ${file.name} 识别失败。\n`;
-        }
+async function handleOnChange(file: UploadFile, fileList: UploadFile[]) {
+  if (file.status === "ready") {
+    const uniqueList = fileList.filter(
+      (f, idx, arr) => arr.findIndex((item) => item.name === f.name && item.size === f.size) === idx,
+    );
+    fileList.length = 0;
+    fileList.push(...uniqueList);
+
+    isLoading.value = true;
+    await startOCR(file);
+    isLoading.value = false;
+  }
+}
+
+async function startOCR(file: UploadFile) {
+  if (!file.raw) return;
+
+  const {
+    data: { text },
+  } = await Tesseract.recognize(file.raw, "eng+chi_sim", {
+    logger: (m) => {
+      if (m.status === "recognizing text") {
       }
-
-      if (allFunds.length > 0) {
-        this.funds = allFunds;
-      } else {
-        this.text = this.text || "所有图片中均未识别到有效基金信息";
-      }
-      this.progress = 100;
     },
-    copyFunds() {
-      // 组装表格内容为文本
-      const rows = this.funds.map(
-        (f) => `
+  });
+
+  const result = ocrAlipay(text);
+  if (result != null && Array.isArray(result) && result.length) {
+    // 合并后去重
+    const merged = [...allFunds.value, ...result];
+    const unique = merged.filter((item, idx, arr) => arr.findIndex((f) => f.fundCode === item.fundCode) === idx);
+    allFunds.value = unique;
+  }
+}
+
+function copyContent() {
+  if (allFunds.value.length === 0) {
+    ElMessage.warning("没有可复制的内容");
+    return;
+  }
+
+  const rows = allFunds.value.map(
+    (f) => `
 基金代码: ${f.fundCode}
 基金名称: ${f.fundName}
 持有金额: ${f.holdAmount}
 持有收益: ${f.holdReturn}`,
-      );
-      const content = [...rows].join("\n");
-      this.copyToClipboard(content);
-    },
-    copyText() {
-      this.copyToClipboard(this.text);
-    },
-    copyToClipboard(content) {
-      if (navigator && navigator.clipboard) {
-        navigator.clipboard.writeText(content);
-      } else {
-        // 兼容性处理
-        const textarea = document.createElement("textarea");
-        textarea.value = content;
-        document.body.appendChild(textarea);
-        textarea.select();
-        document.execCommand("copy");
-        document.body.removeChild(textarea);
-      }
-      if (this.$toast && this.$toast.success) {
-        this.$toast.success("已复制");
-      } else {
-        // 使用浏览器原生的轻提示（如Toast），如果没有则自定义
-        if (window && window.Toastify) {
-          window
-            .Toastify({
-              text: "已复制",
-              duration: 1500,
-              gravity: "top",
-              position: "center",
-              backgroundColor: "#4caf50",
-            })
-            .showToast();
-        } else {
-          // 简单自定义一个轻提示
-          const tip = document.createElement("div");
-          tip.innerText = "已复制";
-          tip.style.position = "fixed";
-          tip.style.top = "20px";
-          tip.style.left = "50%";
-          tip.style.transform = "translateX(-50%)";
-          tip.style.background = "rgba(76,175,80,0.95)";
-          tip.style.color = "#fff";
-          tip.style.padding = "8px 24px";
-          tip.style.borderRadius = "4px";
-          tip.style.fontSize = "16px";
-          tip.style.zIndex = 9999;
-          document.body.appendChild(tip);
-          setTimeout(() => {
-            tip.style.transition = "opacity 0.5s";
-            tip.style.opacity = "0";
-            setTimeout(() => document.body.removeChild(tip), 500);
-          }, 1200);
-        }
-      }
-    },
-  },
-};
+  );
+  const content = [...rows].join("\n");
+  copyToClipboard(content);
+
+  ElMessage.success("内容已复制");
+}
+
+function copyToClipboard(text: string) {
+  if (navigator.clipboard && window.isSecureContext) {
+    navigator.clipboard.writeText(text).catch((err) => {
+      ElMessage.error("复制失败");
+    });
+  } else {
+    ElMessage.error("复制失败");
+  }
+}
 </script>
+
 <style scoped>
-.copy-btn {
-  background: #4caf50;
-  color: #fff;
-  border: none;
-  border-radius: 4px;
-  padding: 6px 18px;
-  font-size: 15px;
-  cursor: pointer;
-  margin-bottom: 12px;
-  margin-right: 8px;
-  transition: background 0.2s;
+.example-image {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
-.copy-btn:hover {
-  background: #388e3c;
-}
-/* 移动端表格横向滚动，内容不换行 */
-.table-responsive {
-  width: 100%;
-  overflow-x: auto;
-}
-table {
-  white-space: nowrap;
-  border-collapse: collapse;
+.demonstration {
+  display: block;
+  color: var(--el-text-color-secondary);
   font-size: 14px;
-  margin: 0;
+  margin-top: 20px;
+  text-align: center;
 }
-th,
-td {
-  white-space: nowrap;
-  padding: 4px 10px;
-  font-size: 13px;
+.title {
+  text-align: center;
 }
-th {
-  font-weight: 500;
+.upload-button {
+  display: flex;
+  justify-content: center;
+  margin: 10px 0;
+}
+.guide {
+  text-align: center;
+  margin: 10px 0 15px 0;
 }
 </style>

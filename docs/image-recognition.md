@@ -1,1 +1,1 @@
-<OCRComponent2 />
+<OCRComponent />
