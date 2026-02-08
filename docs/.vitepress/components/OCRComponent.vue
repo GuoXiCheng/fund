@@ -6,7 +6,9 @@
   <div class="title">
     <h4>免费使用 · 不限用量</h4>
   </div>
-  <div class="guide"><a>使用教程</a></div>
+  <div class="guide">
+    <a href="https://mp.weixin.qq.com/s/g3GieBBTdl61L1hVjh3ZlA" target="_blank" rel="noopener noreferrer">使用教程</a>
+  </div>
   <div class="upload-button">
     <el-upload
       v-model:file-list="fileList"
