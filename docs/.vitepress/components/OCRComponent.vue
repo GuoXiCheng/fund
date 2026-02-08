@@ -16,7 +16,7 @@
       :on-change="handleOnChange"
     >
       <el-button type="primary" style="margin-right: 10px" :loading-icon="Eleme" :loading="isLoading"
-        >点击上传</el-button
+        >上传图片</el-button
       >
     </el-upload>
     <el-button type="success" @click="copyContent" style="margin-left: 10px">复制内容</el-button>
@@ -142,5 +142,6 @@ function copyToClipboard(text: string) {
 .guide {
   text-align: center;
   margin: 10px 0 15px 0;
+  cursor: pointer;
 }
 </style>
