@@ -25,12 +25,12 @@
   </div>
 
   <div style="overflow-x: auto" v-if="allFunds.length > 0">
-    <el-table :data="allFunds" border size="small" :show-header="false">
-      <el-table-column type="index" width="30" />
-      <el-table-column prop="fundCode" />
-      <el-table-column prop="fundName" :min-width="250" />
-      <el-table-column prop="holdAmount" />
-      <el-table-column prop="holdReturn" />
+    <el-table :data="allFunds" border size="small" stripe="false">
+      <el-table-column type="index" width="50" label="序号" />
+      <el-table-column prop="fundCode" label="基金代码" />
+      <el-table-column prop="fundName" :min-width="250" label="基金名称" />
+      <el-table-column prop="holdAmount" label="持有金额" />
+      <el-table-column prop="holdReturn" label="持有收益" />
     </el-table>
   </div>
 </template>
