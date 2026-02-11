@@ -47,7 +47,7 @@ export function ocrAlipay(text: string) {
       // 多候选时，尝试用额外信息精确匹配
       const extraParts = item.slice(3).filter((part) => !/[+\-%]/.test(part));
       for (const part of extraParts) {
-        const cleaned = part.replace(/[^a-zA-Z0-9\u4e00-\u9fa5]/g, "");
+        const cleaned = part.replace(/[^A-Z]/g, "");
         if (!cleaned) continue;
         const matched = candidates.find((key) => key.includes(cleaned) || key.endsWith(cleaned.slice(-1)));
         if (matched) {

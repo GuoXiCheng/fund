@@ -25,7 +25,7 @@
   </div>
 
   <div style="overflow-x: auto" v-if="allFunds.length > 0">
-    <el-table :data="allFunds" border size="small" stripe="false">
+    <el-table :data="allFunds" border size="small" :stripe="false">
       <el-table-column type="index" width="50" label="序号" />
       <el-table-column prop="fundCode" label="基金代码" />
       <el-table-column prop="fundName" :min-width="250" label="基金名称" />
@@ -80,7 +80,6 @@ async function startOCR(file: UploadFile) {
       }
     },
   });
-
   const result = ocrAlipay(text);
   if (result != null && Array.isArray(result) && result.length) {
     // 合并后去重
