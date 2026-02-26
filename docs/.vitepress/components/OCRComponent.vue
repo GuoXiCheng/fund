@@ -17,7 +17,12 @@
       :show-file-list="false"
       :on-change="handleOnChange"
     >
-      <el-button type="primary" style="margin-right: 10px" :loading-icon="Eleme" :loading="isLoading"
+      <el-button
+        type="primary"
+        @click="handleClickUpload"
+        style="margin-right: 10px"
+        :loading-icon="Eleme"
+        :loading="isLoading"
         >上传图片</el-button
       >
     </el-upload>
@@ -36,7 +41,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref } from "vue";
+import { onMounted, onUnmounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import Tesseract from "tesseract.js";
 import { Eleme } from "@element-plus/icons-vue";
@@ -45,6 +50,7 @@ import { ocrAlipay } from "../utils/ocr-ali-pay";
 
 const fileList = ref<UploadFile[]>([]);
 const isLoading = ref(false);
+const ocrProcessing = ref(false);
 
 const allFunds = ref<
   {
@@ -55,6 +61,16 @@ const allFunds = ref<
   }[]
 >([]);
 
+// 1. 在组件挂载时添加监听器
+onMounted(() => {
+  window.addEventListener("focus", handleWindowFocus);
+});
+
+// 2. 在组件卸载时移除监听器，防止内存泄漏
+onUnmounted(() => {
+  window.removeEventListener("focus", handleWindowFocus);
+});
+
 async function handleOnChange(file: UploadFile, fileList: UploadFile[]) {
   if (file.status === "ready") {
     const uniqueList = fileList.filter(
@@ -64,9 +80,25 @@ async function handleOnChange(file: UploadFile, fileList: UploadFile[]) {
     fileList.push(...uniqueList);
 
     isLoading.value = true;
+    ocrProcessing.value = true;
     await startOCR(file);
     isLoading.value = false;
+    ocrProcessing.value = false;
   }
+}
+
+function handleClickUpload() {
+  isLoading.value = true;
+  return true;
+}
+
+// 4. 窗口重新获得焦点时的处理函数
+function handleWindowFocus() {
+  setTimeout(() => {
+    if (ocrProcessing.value == false) {
+      isLoading.value = false;
+    }
+  }, 500);
 }
 
 async function startOCR(file: UploadFile) {
