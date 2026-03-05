@@ -69,7 +69,7 @@ function parseFundData(data: string[]): string[][] {
   // 给字符串 + 号 和 - 号 前面添加空格
   const result1 = data.map((item) => item.replace(/([+-])/g, " $1"));
   // 给字符串0.00前面添加空格
-  const result2 = result1.map((item) => item.replace(/0.00/g, " 0.00"));
+  const result2 = result1.map((item) => item.replace(/0\.00/g, " 0.00"));
   // 给第一个小数点符号，往前找第一个非数字字符（忽略逗号），在这个字符后面添加空格
   const result3 = result2.map((item) => {
     const dotIndex = item.indexOf(".");
