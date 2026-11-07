@@ -13,6 +13,7 @@ export default defineConfig({
     nav: [
       { text: "首页", link: "/" },
       { text: "使用指南", link: "/guide" },
+      { text: "基本用法", link: "/basic-usage" },
       { text: "图片识别", link: "/image-recognition" },
     ],
 
@@ -22,16 +23,13 @@ export default defineConfig({
         items: [{ text: "使用指南", link: "/guide" }],
       },
       {
+        text: "基本用法",
+        items: [{ text: "基本用法", link: "/basic-usage" }],
+      },
+      {
         text: "图片识别",
         items: [{ text: "图片识别", link: "/image-recognition" }],
       },
-      // {
-      //   text: "Examples",
-      //   items: [
-      //     { text: "Markdown Examples", link: "/markdown-examples" },
-      //     { text: "Runtime API Examples", link: "/api-examples" },
-      //   ],
-      // },
     ],
 
     socialLinks: [{ icon: "github", link: "https://github.com/GuoXiCheng/fund" }],
