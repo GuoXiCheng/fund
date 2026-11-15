@@ -11,7 +11,7 @@ hero:
   actions:
     - theme: brand
       text: 使用指南
-      link: /guide
+      link: /basic-usage
     - theme: alt
       text: 图片识别
       link: /image-recognition

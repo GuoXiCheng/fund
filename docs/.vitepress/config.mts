@@ -12,16 +12,16 @@ export default defineConfig({
     // https://vitepress.dev/reference/default-theme-config
     nav: [
       { text: "首页", link: "/" },
-      { text: "使用指南", link: "/guide" },
+      // { text: "使用指南", link: "/guide" },
       { text: "基本用法", link: "/basic-usage" },
       { text: "图片识别", link: "/image-recognition" },
     ],
 
     sidebar: [
-      {
-        text: "使用指南",
-        items: [{ text: "使用指南", link: "/guide" }],
-      },
+      // {
+      //   text: "使用指南",
+      //   items: [{ text: "使用指南", link: "/guide" }],
+      // },
       {
         text: "基本用法",
         items: [{ text: "基本用法", link: "/basic-usage" }],
